@@ -67,15 +67,6 @@ internal class Program {
                 WindowStyle = ProcessWindowStyle.Hidden,
             }
         };
-        var lockFileName = $"lock_{execId}";
-        var pathToLockFile = $"{pathToTmp}/{lockFileName}";
-        {
-            using var lockFile = File.OpenWrite(pathToLockFile);
-        }
-        using var lockFileWatcher = new FileSystemWatcher(pathToTmp, lockFileName) {
-            EnableRaisingEvents = true,
-            NotifyFilter = NotifyFilters.LastWrite,
-        };
         try {
             process.Start();
         }
@@ -89,9 +80,13 @@ internal class Program {
             Log(execId, ex.ToString());
             throw;
         }
-        lockFileWatcher.WaitForChanged(WatcherChangeTypes.Changed);
+        process.WaitForExit();
+        var pathToLockFile = $"{pathToTmp}/lock_{execId}";
         var pathToOutputFile = $"{pathToTmp}/out_{execId}";
-        Log(execId, "lock file touched.");
+        while (!File.Exists(pathToLockFile)) {
+            Thread.Sleep(5);
+        }
+        Log(execId, "lock file found.");
         {
             using var outputStream = Console.OpenStandardOutput();
             using var fileStream = File.OpenRead(pathToOutputFile);
