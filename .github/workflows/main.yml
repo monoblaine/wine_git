@@ -24,7 +24,7 @@ jobs:
       run: msbuild WineGit\WineGit.csproj -t:rebuild -verbosity:diag -property:Configuration=Release
  
     - name: Upload Artifact
-      uses: actions/upload-artifact@v1.0.0
+      uses: actions/upload-artifact@v4
       with:
         name: published_app
-        path: bin\Release
+        path: WineGit\bin\Release
