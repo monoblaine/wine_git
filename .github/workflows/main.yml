@@ -1,0 +1,30 @@
+name: Build App
+ 
+on: [push]
+ 
+jobs:
+  build:
+ 
+    runs-on: windows-latest
+ 
+    steps:
+    - uses: actions/checkout@v1
+      name: Checkout Code
+     
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v2
+       
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v1.0.2
+     
+    - name: Restore NuGet Packages
+      run: nuget restore WineGit.sln
+ 
+    - name: Build App
+      run: msbuild WineGit\WineGit.csproj -t:rebuild -verbosity:diag -property:Configuration=Release
+ 
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: published_app
+        path: bin\Release
