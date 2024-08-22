@@ -41,8 +41,9 @@ internal class Program {
         var isInputRedirected = copyOfInputStream.Length > 0;
         Log(execId, $"isInputRedirected: {isInputRedirected}");
         var pathToTmp = $"{PathToWineGitFolder}/tmp";
+        var pathToRedirectedInput = $"{pathToTmp}/in_{execId}";
         if (isInputRedirected) {
-            using var redirectedInput = File.OpenWrite($"{pathToTmp}/in_{execId}");
+            using var redirectedInput = File.OpenWrite(pathToRedirectedInput);
             copyOfInputStream.CopyTo(redirectedInput);
         }
         var executeWorkerScriptDirectly = appSettings["ExecuteWorkerScriptDirectly"] == "1";
@@ -92,6 +93,7 @@ internal class Program {
             fileStream.CopyTo(outputStream);
         }
         Log(execId, "output is sent.");
+        File.Delete(pathToRedirectedInput);
         File.Delete(pathToOutputFile);
         File.Delete(pathToLockFile);
         Log(execId, "files are deleted.");
