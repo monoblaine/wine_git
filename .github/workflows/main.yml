@@ -14,15 +14,15 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
-
-    - name: Restore dependencies
-      run: dotnet restore
  
     - name: Build App
       run: dotnet publish -r win-x64 -c Release
- 
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
+
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
       with:
-        name: published_app
-        path: WineGit/bin/Release/net8.0/win-x64/publish
+        files: |
+          WineGit/bin/Release/net8.0/win-x64/publish/wine_git.exe
+          WineGit/bin/Release/net8.0/win-x64/publish/worker.sh
+          WineGit/bin/Release/net8.0/win-x64/publish/settings.ini
