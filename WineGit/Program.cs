@@ -73,8 +73,8 @@ internal class Program {
         process.Start();
         lockFileWatcher.WaitForChanged(WatcherChangeTypes.Changed);
         var pathToOutputFile = $"{pathToTmp}/out_{execId}";
-        Console.OutputEncoding = UTF8WithoutBom;
         {
+            Console.OutputEncoding = UTF8WithoutBom;
             using var outputStream = Console.OpenStandardOutput();
             using var fileStream = File.OpenRead(pathToOutputFile);
             fileStream.CopyTo(outputStream);
