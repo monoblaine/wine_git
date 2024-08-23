@@ -61,12 +61,18 @@ internal class Program {
                 WindowStyle = ProcessWindowStyle.Hidden,
             }
         };
-        process.Start();
-        var pathToLockFile = $"{pathToTmp}/lock_{execId}";
-        var pathToOutputFile = $"{pathToTmp}/out_{execId}";
-        while (!File.Exists(pathToLockFile)) {
-            Thread.Sleep(5);
+        var lockFileName = $"lock_{execId}";
+        var pathToLockFile = $"{pathToTmp}/{lockFileName}";
+        {
+            using var lockFile = File.OpenWrite(pathToLockFile);
         }
+        using var lockFileWatcher = new FileSystemWatcher(pathToTmp, lockFileName) {
+            // NOTE: For some reason "NotifyFilters.LastWrite" does not work under Wine.
+            NotifyFilter = NotifyFilters.Attributes,
+        };
+        process.Start();
+        lockFileWatcher.WaitForChanged(WatcherChangeTypes.Changed);
+        var pathToOutputFile = $"{pathToTmp}/out_{execId}";
         Console.OutputEncoding = UTF8WithoutBom;
         {
             using var outputStream = Console.OpenStandardOutput();
