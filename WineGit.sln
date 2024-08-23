@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.35201.131
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WineGit", "WineGit\WineGit.csproj", "{CAF16B3C-EFFA-4EFD-B657-6BFF554997D0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WineGit", "WineGit\WineGit.csproj", "{3863F868-E012-41C9-BE6D-111FF97E7AED}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{CAF16B3C-EFFA-4EFD-B657-6BFF554997D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CAF16B3C-EFFA-4EFD-B657-6BFF554997D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CAF16B3C-EFFA-4EFD-B657-6BFF554997D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CAF16B3C-EFFA-4EFD-B657-6BFF554997D0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3863F868-E012-41C9-BE6D-111FF97E7AED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3863F868-E012-41C9-BE6D-111FF97E7AED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3863F868-E012-41C9-BE6D-111FF97E7AED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3863F868-E012-41C9-BE6D-111FF97E7AED}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {87E56BB9-FD2B-4F2C-81EB-D545EED5B3F8}
+		SolutionGuid = {1E072049-3CBA-4D0D-BDC5-759EB2691CB9}
 	EndGlobalSection
 EndGlobal

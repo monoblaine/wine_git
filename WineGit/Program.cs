@@ -1,114 +1,89 @@
-using System;
-using System.Configuration;
 using System.Diagnostics;
-using System.IO;
 using System.Text;
-using System.Threading;
+using Microsoft.Extensions.Configuration;
 
 namespace WineGit;
 
 internal class Program {
     private static readonly Encoding UTF8WithoutBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-    private static String PathToWineGitFolder;
-    private static Boolean LoggingEnabled;
+    private static readonly String PathToWineGitFolder;
+    private static readonly String PathToSh;
+    private static readonly String? PathToLogFile;
+    private static readonly Boolean ExecuteWorkerScriptDirectly;
+    private static readonly Boolean LoggingEnabled;
+
+    static Program () {
+        var config = new ConfigurationBuilder()
+            .AddIniFile("settings.ini", optional: false, reloadOnChange: false)
+            .Build();
+        PathToWineGitFolder = config["path_to_wine_git_folder"]!;
+        PathToSh = config["path_to_sh"] ?? String.Empty;
+        ExecuteWorkerScriptDirectly = config["execute_worker_script_directly"] == "1";
+        LoggingEnabled = config["logging_enabled"] == "1";
+        PathToLogFile = LoggingEnabled ? $"{PathToWineGitFolder}/log.txt" : null;
+    }
 
     private static void Main () {
-        PathToWineGitFolder = ConfigurationManager.AppSettings["PathToWineGitFolder"];
-        LoggingEnabled = ConfigurationManager.AppSettings["LoggingEnabled"] == "1";
         const String wineGitProcessName = "wine_git.exe";
-        const String workerScriptName = "worker.sh";
-        var appSettings = ConfigurationManager.AppSettings;
-        var execId = Guid.NewGuid().ToString();
         var args = CommandLineHelper.GetOriginalCommandLine();
-        args = args.Substring(args.IndexOf(wineGitProcessName) + wineGitProcessName.Length).TrimStart(' ', '"');
+        args = args[(args.IndexOf(wineGitProcessName) + wineGitProcessName.Length)..].TrimStart(' ', '"');
+        var execId = Guid.NewGuid().ToString();
         Log(execId, args);
-        using var copyOfInputStream = new MemoryStream();
-        // TODO: Assuming commit command on GitExtensions never needs redirecting the input.
-        if (!args.StartsWith("commit")) {
-            try {
-                using var inputStream = Console.OpenStandardInput();
-                inputStream.CopyTo(copyOfInputStream);
-                copyOfInputStream.Seek(0, SeekOrigin.Begin);
-            }
-            catch (IOException ex) {
-                if (!IsErrorNoData(ex)) {
-                    Log(execId, ex.ToString());
-                    throw;
-                }
-            }
-        }
-        // Console.IsInputRedirected does not give reliable results under wine.
-        var isInputRedirected = copyOfInputStream.Length > 0;
+        var isInputRedirected = Console.IsInputRedirected;
         Log(execId, $"isInputRedirected: {isInputRedirected}");
         var pathToTmp = $"{PathToWineGitFolder}/tmp";
-        var pathToRedirectedInput = $"{pathToTmp}/in_{execId}";
+        var pathToRedirectedInput = isInputRedirected ? $"{pathToTmp}/in_{execId}" : null;
         if (isInputRedirected) {
-            using var redirectedInput = File.OpenWrite(pathToRedirectedInput);
-            copyOfInputStream.CopyTo(redirectedInput);
+            using var inputStream = Console.OpenStandardInput();
+            using var redirectedInput = File.OpenWrite(pathToRedirectedInput!);
+            inputStream.CopyTo(redirectedInput);
         }
-        var executeWorkerScriptDirectly = appSettings["ExecuteWorkerScriptDirectly"] == "1";
+        var pathToWorkerScript = $"{PathToWineGitFolder}/worker.sh";
+        var workerScriptArgs = String.Format(
+            "{0}{1} {2} {3}",
+            ExecuteWorkerScriptDirectly ? String.Empty : $"\"{pathToWorkerScript}\" ",
+            execId,
+            isInputRedirected ? 1 : 0,
+            args
+        );
+        Log(execId, $"workerScriptArgs: {workerScriptArgs}");
         using var process = new Process {
             EnableRaisingEvents = false,
             StartInfo = new ProcessStartInfo {
-                FileName = executeWorkerScriptDirectly ? workerScriptName : appSettings["PathToSh"],
-                Arguments = String.Format(
-                    "{0}{1} {2} {3}",
-                    executeWorkerScriptDirectly ? String.Empty : $"{workerScriptName} ",
-                    execId,
-                    isInputRedirected ? 1 : 0,
-                    args
-                ),
+                FileName = ExecuteWorkerScriptDirectly ? pathToWorkerScript : PathToSh,
+                Arguments = workerScriptArgs,
                 WorkingDirectory = Environment.CurrentDirectory,
-                UseShellExecute = false,
+                UseShellExecute = true,
                 RedirectStandardError = false,
-                RedirectStandardInput = true,
+                RedirectStandardInput = false,
                 RedirectStandardOutput = false,
                 CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
             }
         };
-        try {
-            process.Start();
-        }
-        catch (IOException ex) {
-            if (!IsErrorNoData(ex)) {
-                Log(execId, ex.ToString());
-                throw;
-            }
-        }
-        catch (Exception ex) {
-            Log(execId, ex.ToString());
-            throw;
-        }
-        process.WaitForExit();
+        process.Start();
         var pathToLockFile = $"{pathToTmp}/lock_{execId}";
         var pathToOutputFile = $"{pathToTmp}/out_{execId}";
         while (!File.Exists(pathToLockFile)) {
             Thread.Sleep(5);
         }
-        Log(execId, "lock file found.");
+        Console.OutputEncoding = UTF8WithoutBom;
         {
             using var outputStream = Console.OpenStandardOutput();
             using var fileStream = File.OpenRead(pathToOutputFile);
             fileStream.CopyTo(outputStream);
         }
-        Log(execId, "output is sent.");
-        File.Delete(pathToRedirectedInput);
+        if (isInputRedirected) {
+            File.Delete(pathToRedirectedInput!);
+        }
         File.Delete(pathToOutputFile);
         File.Delete(pathToLockFile);
-        Log(execId, "files are deleted.");
-    }
-
-    private static Boolean IsErrorNoData (IOException ex) {
-        // TODO: Should find a better way to detect ERROR_NO_DATA
-        return ex.Message.Contains("Win32 IO returned 232");
     }
 
     private static void Log (String execId, String message) {
         if (!LoggingEnabled) {
             return;
         }
-        var pathToLogFile = $"{PathToWineGitFolder}/log.txt";
-        File.AppendAllText(pathToLogFile, $"[{execId}] {message}\n", UTF8WithoutBom);
+        File.AppendAllText(PathToLogFile!, $"[{execId}] {message}\n", UTF8WithoutBom);
     }
 }

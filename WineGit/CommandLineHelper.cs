@@ -1,11 +1,10 @@
-using System;
 using System.Runtime.InteropServices;
 
 namespace WineGit;
 
-internal class CommandLineHelper {
-    [DllImport("kernel32", CharSet = CharSet.Unicode)]
-    private static extern IntPtr GetCommandLineW ();
+internal static partial class CommandLineHelper {
+    [LibraryImport("kernel32", StringMarshalling = StringMarshalling.Utf16)]
+    private static partial IntPtr GetCommandLineW ();
 
     public static String GetOriginalCommandLine () {
         var commandLinePtr = GetCommandLineW();
