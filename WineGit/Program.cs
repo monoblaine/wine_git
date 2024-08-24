@@ -34,9 +34,17 @@ internal class Program {
         var pathToTmp = $"{PathToWineGitFolder}/tmp";
         var pathToRedirectedInput = isInputRedirected ? $"{pathToTmp}/in_{execId}" : null;
         if (isInputRedirected) {
-            using var inputStream = Console.OpenStandardInput();
-            using var redirectedInput = File.OpenWrite(pathToRedirectedInput!);
-            inputStream.CopyTo(redirectedInput);
+            Boolean isInputReallyRedirected;
+            {
+                using var inputStream = Console.OpenStandardInput();
+                using var redirectedInput = File.OpenWrite(pathToRedirectedInput!);
+                inputStream.CopyTo(redirectedInput);
+                isInputReallyRedirected = redirectedInput.Length > 0;
+            }
+            if (!isInputReallyRedirected) {
+                File.Delete(pathToRedirectedInput!);
+                isInputRedirected = false;
+            }
         }
         var pathToWorkerScript = $"{PathToWineGitFolder}/worker.sh";
         var workerScriptArgs = String.Format(
