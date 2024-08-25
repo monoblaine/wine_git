@@ -78,7 +78,7 @@ internal class Program {
             // NOTE: For some reason "NotifyFilters.LastWrite" does not work under Wine.
             NotifyFilter = NotifyFilters.Attributes,
         };
-        process.Start();
+        Task.Run(process.Start);
         lockFileWatcher.WaitForChanged(WatcherChangeTypes.Changed);
         var pathToOutputFile = $"{pathToTmp}/out_{execId}";
         {
