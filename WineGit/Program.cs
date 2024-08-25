@@ -26,7 +26,9 @@ internal class Program {
     private static void Main () {
         const String wineGitProcessName = "wine_git.exe";
         var args = CommandLineHelper.GetOriginalCommandLine();
-        args = args[(args.IndexOf(wineGitProcessName) + wineGitProcessName.Length)..].TrimStart(' ', '"');
+        args = args[(args.IndexOf(wineGitProcessName) + wineGitProcessName.Length)..]
+            .TrimStart(' ', '"')
+            .Replace("Z:/", "/");
         var execId = Guid.NewGuid().ToString();
         Log(execId, args);
         var isInputRedirected = Console.IsInputRedirected;
