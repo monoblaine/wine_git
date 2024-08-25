@@ -10,7 +10,7 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <AssemblyName>wine_git</AssemblyName>
     <Authors>Serhan Apaydın</Authors>
-    <VersionPrefix>0.2.2</VersionPrefix>
+    <VersionPrefix>0.2.3</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>
