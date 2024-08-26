@@ -34,6 +34,7 @@ internal class Program {
         var isInputRedirected = Console.IsInputRedirected;
         Log(execId, $"isInputRedirected: {isInputRedirected}");
         var pathToTmp = $"{PathToWineGitFolder}/tmp";
+        Directory.CreateDirectory(pathToTmp);
         var pathToRedirectedInput = isInputRedirected ? $"{pathToTmp}/in_{execId}" : null;
         if (isInputRedirected) {
             Boolean isInputReallyRedirected;
