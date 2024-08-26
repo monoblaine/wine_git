@@ -11,6 +11,7 @@ internal class Program {
     private static readonly String? PathToLogFile;
     private static readonly Boolean ExecuteWorkerScriptDirectly;
     private static readonly Boolean LoggingEnabled;
+    private static String? ExecId;
 
     static Program () {
         var config = new ConfigurationBuilder()
@@ -29,13 +30,13 @@ internal class Program {
         args = args[(args.IndexOf(wineGitProcessName) + wineGitProcessName.Length)..]
             .TrimStart(' ', '"')
             .Replace("Z:/", "/");
-        var execId = Guid.NewGuid().ToString();
-        Log(execId, args);
+        ExecId = Guid.NewGuid().ToString();
+        Log(args);
         var isInputRedirected = Console.IsInputRedirected;
-        Log(execId, $"isInputRedirected: {isInputRedirected}");
+        Log($"isInputRedirected: {isInputRedirected}");
         var pathToTmp = $"{PathToWineGitFolder}/tmp";
         Directory.CreateDirectory(pathToTmp);
-        var pathToRedirectedInput = isInputRedirected ? $"{pathToTmp}/in_{execId}" : null;
+        var pathToRedirectedInput = isInputRedirected ? $"{pathToTmp}/in_{ExecId}" : null;
         if (isInputRedirected) {
             Boolean isInputReallyRedirected;
             {
@@ -53,11 +54,11 @@ internal class Program {
         var workerScriptArgs = String.Format(
             "{0}{1} {2} {3}",
             ExecuteWorkerScriptDirectly ? String.Empty : $"\"{pathToWorkerScript}\" ",
-            execId,
+            ExecId,
             isInputRedirected ? 1 : 0,
             args
         );
-        Log(execId, $"workerScriptArgs: {workerScriptArgs}");
+        Log($"workerScriptArgs: {workerScriptArgs}");
         using var process = new Process {
             EnableRaisingEvents = false,
             StartInfo = new ProcessStartInfo {
@@ -72,7 +73,7 @@ internal class Program {
                 WindowStyle = ProcessWindowStyle.Hidden,
             }
         };
-        var lockFileName = $"lock_{execId}";
+        var lockFileName = $"lock_{ExecId}";
         var pathToLockFile = $"{pathToTmp}/{lockFileName}";
         {
             using var lockFile = File.OpenWrite(pathToLockFile);
@@ -83,7 +84,7 @@ internal class Program {
         };
         Task.Run(new DelayedWork(process.Start).Start);
         lockFileWatcher.WaitForChanged(WatcherChangeTypes.Changed);
-        var pathToOutputFile = $"{pathToTmp}/out_{execId}";
+        var pathToOutputFile = $"{pathToTmp}/out_{ExecId}";
         {
             Console.OutputEncoding = UTF8WithoutBom;
             using var outputStream = Console.OpenStandardOutput();
@@ -104,10 +105,10 @@ internal class Program {
         }
     }
 
-    private static void Log (String execId, String message) {
+    private static void Log (String message) {
         if (!LoggingEnabled) {
             return;
         }
-        File.AppendAllText(PathToLogFile!, $"[{execId}] {message}\n", UTF8WithoutBom);
+        File.AppendAllText(PathToLogFile!, $"[{ExecId ?? Guid.Empty.ToString()}] {message}\n", UTF8WithoutBom);
     }
 }
