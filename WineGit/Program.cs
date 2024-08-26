@@ -25,6 +25,9 @@ internal class Program {
     }
 
     private static void Main () {
+        if (LoggingEnabled) {
+            AppDomain.CurrentDomain.UnhandledException += LogUnhandledException;
+        }
         const String wineGitProcessName = "wine_git.exe";
         var args = CommandLineHelper.GetOriginalCommandLine();
         args = args[(args.IndexOf(wineGitProcessName) + wineGitProcessName.Length)..]
@@ -96,6 +99,10 @@ internal class Program {
         }
         File.Delete(pathToOutputFile);
         File.Delete(pathToLockFile);
+    }
+
+    private static void LogUnhandledException (Object sender, UnhandledExceptionEventArgs e) {
+        Log(e?.ToString() ?? "Unknown error");
     }
 
     private readonly record struct DelayedWork (Func<Boolean> Run) {
