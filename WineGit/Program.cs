@@ -11,6 +11,7 @@ internal class Program {
     private static readonly String? PathToLogFile;
     private static readonly Boolean ExecuteWorkerScriptDirectly;
     private static readonly Boolean LoggingEnabled;
+    private static readonly Boolean AutoCreateTmpFolderIfMissing;
     private static String? ExecId;
 
     static Program () {
@@ -21,6 +22,7 @@ internal class Program {
         PathToSh = config["path_to_sh"] ?? String.Empty;
         ExecuteWorkerScriptDirectly = config["execute_worker_script_directly"] == "1";
         LoggingEnabled = config["logging_enabled"] == "1";
+        AutoCreateTmpFolderIfMissing = config["auto_create_tmp_folder_if_missing"] == "1";
         PathToLogFile = LoggingEnabled ? $"{PathToWineGitFolder}/log.txt" : null;
     }
 
@@ -37,7 +39,9 @@ internal class Program {
         Log(args);
         var isInputRedirected = Console.IsInputRedirected;
         var pathToTmp = $"{PathToWineGitFolder}/tmp";
-        Directory.CreateDirectory(pathToTmp);
+        if (AutoCreateTmpFolderIfMissing) {
+            Directory.CreateDirectory(pathToTmp);
+        }
         var pathToRedirectedInput = isInputRedirected ? $"{pathToTmp}/in_{ExecId}" : null;
         if (isInputRedirected) {
             Boolean isInputReallyRedirected;
