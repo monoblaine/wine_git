@@ -80,7 +80,7 @@ internal class Program {
             // NOTE: For some reason "NotifyFilters.LastWrite" does not work under Wine.
             NotifyFilter = NotifyFilters.Attributes,
         };
-        Task.Run(process.Start);
+        Task.Run(new DelayedWork(process.Start).Start);
         lockFileWatcher.WaitForChanged(WatcherChangeTypes.Changed);
         var pathToOutputFile = $"{pathToTmp}/out_{execId}";
         {
@@ -94,6 +94,13 @@ internal class Program {
         }
         File.Delete(pathToOutputFile);
         File.Delete(pathToLockFile);
+    }
+
+    private readonly record struct DelayedWork (Func<Boolean> Run) {
+        public async Task Start () {
+            await Task.Yield();
+            Run();
+        }
     }
 
     private static void Log (String execId, String message) {
