@@ -36,7 +36,6 @@ internal class Program {
         ExecId = Guid.NewGuid().ToString();
         Log(args);
         var isInputRedirected = Console.IsInputRedirected;
-        Log($"isInputRedirected: {isInputRedirected}");
         var pathToTmp = $"{PathToWineGitFolder}/tmp";
         Directory.CreateDirectory(pathToTmp);
         var pathToRedirectedInput = isInputRedirected ? $"{pathToTmp}/in_{ExecId}" : null;
@@ -53,6 +52,7 @@ internal class Program {
                 isInputRedirected = false;
             }
         }
+        Log($"isInputRedirected: {isInputRedirected}");
         var pathToWorkerScript = $"{PathToWineGitFolder}/worker.sh";
         var workerScriptArgs = String.Format(
             "{0}{1} {2} {3}",
