@@ -106,7 +106,7 @@ internal class Program {
     }
 
     private static void LogUnhandledException (Object sender, UnhandledExceptionEventArgs e) {
-        Log(e?.ToString() ?? "Unknown error");
+        Log(e?.ExceptionObject.ToString() ?? "Unknown error");
     }
 
     private readonly record struct DelayedWork (Func<Boolean> Run) {
