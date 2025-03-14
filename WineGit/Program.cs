@@ -13,6 +13,7 @@ internal class Program {
     private static readonly Boolean LoggingEnabled;
     private static readonly Boolean AutoCreateTmpFolderIfMissing;
     private static String? ExecId;
+    private static ManualResetEventSlim? ResetEvent;
 
     static Program () {
         var config = new ConfigurationBuilder()
@@ -87,10 +88,15 @@ internal class Program {
         }
         using var lockFileWatcher = new FileSystemWatcher(pathToTmp, lockFileName) {
             // NOTE: For some reason "NotifyFilters.LastWrite" does not work under Wine.
-            NotifyFilter = NotifyFilters.Attributes,
+            NotifyFilter = NotifyFilters.Attributes | NotifyFilters.LastWrite,
+            EnableRaisingEvents = true,
         };
-        Task.Run(new DelayedWork(process.Start).Start);
-        lockFileWatcher.WaitForChanged(WatcherChangeTypes.Changed);
+        ResetEvent = new ManualResetEventSlim(initialState: false);
+        lockFileWatcher.Changed += LockFileWatcher_Changed;
+        process.Start();
+        ResetEvent.Wait();
+        lockFileWatcher.Changed -= LockFileWatcher_Changed;
+        ResetEvent.Dispose();
         var pathToOutputFile = $"{pathToTmp}/out_{ExecId}";
         {
             Console.OutputEncoding = UTF8WithoutBom;
@@ -109,11 +115,8 @@ internal class Program {
         Log(e?.ExceptionObject.ToString() ?? "Unknown error");
     }
 
-    private readonly record struct DelayedWork (Func<Boolean> Run) {
-        public async Task Start () {
-            await Task.Yield();
-            Run();
-        }
+    private static void LockFileWatcher_Changed (Object sender, FileSystemEventArgs e) {
+        ResetEvent!.Set();
     }
 
     private static void Log (String message) {
