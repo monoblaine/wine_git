@@ -49,8 +49,25 @@ internal class Program {
             {
                 using var inputStream = Console.OpenStandardInput();
                 using var redirectedInput = File.OpenWrite(pathToRedirectedInput!);
-                inputStream.CopyTo(redirectedInput);
-                isInputReallyRedirected = redirectedInput.Length > 0;
+                using var cts = new CancellationTokenSource(150);
+                var ct = cts.Token;
+                var buffer = new Byte[4096];
+                var tryReadStdinTask = inputStream.ReadAsync(buffer, 0, 8, ct);
+                try {
+                    tryReadStdinTask.Wait(ct);
+                    var bytesRead = tryReadStdinTask.Result;
+                    if (bytesRead > 0) {
+                        redirectedInput.Write(buffer, 0, bytesRead);
+                    }
+                    while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0) {
+                        redirectedInput.Write(buffer, 0, bytesRead);
+                    }
+                    isInputReallyRedirected = redirectedInput.Length > 0;
+                }
+                catch (OperationCanceledException) {
+                    isInputReallyRedirected = false;
+                    Log("read stdin timed out.");
+                }
             }
             if (!isInputReallyRedirected) {
                 File.Delete(pathToRedirectedInput!);
