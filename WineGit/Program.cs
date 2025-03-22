@@ -31,7 +31,7 @@ internal class Program {
         if (LoggingEnabled) {
             AppDomain.CurrentDomain.UnhandledException += LogUnhandledException;
         }
-        const String wineGitProcessName = "wine_git.exe";
+        const String wineGitProcessName = "git.exe";
         var args = CommandLineHelper.GetOriginalCommandLine();
         args = args[(args.IndexOf(wineGitProcessName) + wineGitProcessName.Length)..]
             .TrimStart(' ', '"')

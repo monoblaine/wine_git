@@ -8,7 +8,7 @@
     <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <AssemblyName>wine_git</AssemblyName>
+    <AssemblyName>git</AssemblyName>
     <Authors>Serhan Apaydın</Authors>
     <VersionPrefix>0.4.1</VersionPrefix>
   </PropertyGroup>
