@@ -118,8 +118,8 @@ internal class Program {
         {
             Console.OutputEncoding = UTF8WithoutBom;
             using var outputStream = Console.OpenStandardOutput();
-            using var fileStream = File.OpenRead(pathToOutputFile);
-            fileStream.CopyTo(outputStream);
+            using var outputFileStream = File.OpenRead(pathToOutputFile);
+            outputFileStream.CopyTo(outputStream);
         }
         if (isInputRedirected) {
             File.Delete(pathToRedirectedInput!);
