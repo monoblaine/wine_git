@@ -99,7 +99,7 @@ internal class Program {
             NotifyFilter = NotifyFilters.Attributes | NotifyFilters.LastWrite,
             EnableRaisingEvents = true,
         })
-        using (var resetEvent = new ManualResetEventSlim(initialState: false))
+        using (var resetEvent = new ManualResetEvent(initialState: false))
         using (var process = new Process {
             EnableRaisingEvents = false,
             StartInfo = new ProcessStartInfo {
@@ -117,7 +117,7 @@ internal class Program {
             void lockFileWatcherChangeHandler (Object sender, FileSystemEventArgs e) => resetEvent.Set();
             lockFileWatcher.Changed += lockFileWatcherChangeHandler;
             process.Start();
-            resetEvent.Wait();
+            resetEvent.WaitOne();
             lockFileWatcher.Changed -= lockFileWatcherChangeHandler;
         }
         var pathToOutputFile = $"{pathToTmp}/out_{ExecId}";
