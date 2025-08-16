@@ -12,8 +12,8 @@ internal class Program {
     private static readonly Boolean LoggingEnabled;
     private static readonly String? PathToLogFile;
     private static readonly Boolean AutoCreateTmpFolderIfMissing;
-    private static String? ExecId;
     private static ManualResetEventSlim? ResetEvent;
+    private static readonly String ExecId;
 
     static Program () {
         var config = new ConfigurationBuilder()
@@ -25,6 +25,7 @@ internal class Program {
         LoggingEnabled = config["logging_enabled"] == "1";
         AutoCreateTmpFolderIfMissing = config["auto_create_tmp_folder_if_missing"] == "1";
         PathToLogFile = LoggingEnabled ? $"{PathToWineGitFolder}/log.txt" : null;
+        ExecId = Guid.NewGuid().ToString();
     }
 
     private static void Main () {
@@ -36,7 +37,6 @@ internal class Program {
         args = args[(args.IndexOf(wineGitProcessName) + wineGitProcessName.Length)..]
             .TrimStart(' ', '"')
             .Replace("Z:/", "/");
-        ExecId = Guid.NewGuid().ToString();
         Log(args);
         var isInputRedirected = Console.IsInputRedirected;
         var pathToTmp = $"{PathToWineGitFolder}/tmp";
@@ -140,6 +140,6 @@ internal class Program {
         if (!LoggingEnabled) {
             return;
         }
-        File.AppendAllText(PathToLogFile!, $"[{ExecId ?? Guid.Empty.ToString()}] {message}\n", UTF8WithoutBom);
+        File.AppendAllText(PathToLogFile!, $"[{ExecId}] {message}\n", UTF8WithoutBom);
     }
 }
