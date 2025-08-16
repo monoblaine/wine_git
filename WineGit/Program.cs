@@ -86,7 +86,6 @@ internal class Program {
             }
         }
         Log?.Invoke(nameof(isInputRedirected), isInputRedirected.ToString());
-        var pathToWorkerScript = $"{PathToWineGitFolder}/worker.sh";
         var args = CommandLineHelper.GetOriginalCommandLine();
         args = args[(args.IndexOf(wineGitProcessName) + wineGitProcessName.Length)..]
             .TrimStart(' ', '"')
@@ -107,7 +106,7 @@ internal class Program {
         using (var process = new Process {
             EnableRaisingEvents = false,
             StartInfo = new ProcessStartInfo {
-                FileName = pathToWorkerScript,
+                FileName = $"{PathToWineGitFolder}/worker.sh",
                 Arguments = workerScriptArgs,
                 WorkingDirectory = Environment.CurrentDirectory,
                 UseShellExecute = true,
