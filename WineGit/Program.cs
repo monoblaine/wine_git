@@ -7,8 +7,6 @@ namespace WineGit;
 internal class Program {
     private static readonly Encoding UTF8WithoutBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
     private static readonly String PathToWineGitFolder;
-    private static readonly String PathToSh;
-    private static readonly Boolean ExecuteWorkerScriptDirectly;
     private static readonly Boolean LoggingEnabled;
     private static readonly Action<String, String>? Log;
     private static readonly String? PathToLogFile;
@@ -20,8 +18,6 @@ internal class Program {
             .AddIniFile("settings.ini", optional: false, reloadOnChange: false)
             .Build();
         PathToWineGitFolder = config["path_to_wine_git_folder"]!;
-        PathToSh = config["path_to_sh"] ?? String.Empty;
-        ExecuteWorkerScriptDirectly = config["execute_worker_script_directly"] == "1";
         LoggingEnabled = config["logging_enabled"] == "1";
         if (LoggingEnabled) {
             Log = LogImpl;
@@ -82,13 +78,7 @@ internal class Program {
             .TrimStart(' ', '"')
             .Replace("Z:/", "/");
         Log?.Invoke(nameof(args), args);
-        var workerScriptArgs = String.Format(
-            "{0}{1} {2} {3}",
-            ExecuteWorkerScriptDirectly ? String.Empty : $"\"{pathToWorkerScript}\" ",
-            ExecId,
-            isInputRedirected ? 1 : 0,
-            args
-        );
+        var workerScriptArgs = String.Join(' ', ExecId, isInputRedirected ? '1' : '0', args);
         Log?.Invoke(nameof(workerScriptArgs), workerScriptArgs);
         var lockFileName = $"lock_{ExecId}";
         var pathToLockFile = $"{pathToTmp}/{lockFileName}";
@@ -103,7 +93,7 @@ internal class Program {
         using (var process = new Process {
             EnableRaisingEvents = false,
             StartInfo = new ProcessStartInfo {
-                FileName = ExecuteWorkerScriptDirectly ? pathToWorkerScript : PathToSh,
+                FileName = pathToWorkerScript,
                 Arguments = workerScriptArgs,
                 WorkingDirectory = Environment.CurrentDirectory,
                 UseShellExecute = true,
