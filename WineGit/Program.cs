@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 namespace WineGit;
 
 internal class Program {
+    private const Int32 UnknownExitCode = 1;
     private static readonly Encoding UTF8WithoutBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
     private static readonly String PathToWineGitFolder;
     private static readonly Boolean LoggingEnabled;
@@ -33,7 +34,7 @@ internal class Program {
         ExecId = Guid.NewGuid().ToString();
     }
 
-    private static void Main () {
+    private static Int32 Main () {
         if (LoggingEnabled) {
             AppDomain.CurrentDomain.UnhandledException += LogUnhandledException;
         }
@@ -123,14 +124,30 @@ internal class Program {
             resetEvent.WaitOne();
             lockFileWatcher.Changed -= lockFileWatcherChangeHandler;
         }
+        var pathToExitCodeFile = $"{pathToTmp}/exc_{ExecId}";
+        Int32 exitCode;
+        if (!File.Exists(pathToExitCodeFile)) {
+            exitCode = UnknownExitCode;
+        }
+        else {
+            using (var excFileStream = File.OpenText(pathToExitCodeFile)) {
+                var exitCodeString = excFileStream.ReadLine();
+                if (exitCodeString is null || !Int32.TryParse(exitCodeString, out exitCode)) {
+                    exitCode = UnknownExitCode;
+                }
+            }
+            File.Delete(pathToExitCodeFile);
+        }
+        Log?.Invoke("Exit code", exitCode.ToString());
         var pathToOutputFile = $"{pathToTmp}/out_{ExecId}";
         Console.OutputEncoding = UTF8WithoutBom;
         using (var outputFileStream = File.OpenRead(pathToOutputFile))
-        using (var outputStream = Console.OpenStandardOutput()) {
-            outputFileStream.CopyTo(outputStream);
+        using (var stdStream = exitCode == 0 ? Console.OpenStandardOutput() : Console.OpenStandardError()) {
+            outputFileStream.CopyTo(stdStream);
         }
         File.Delete(pathToOutputFile);
         File.Delete(pathToLockFile);
+        return exitCode;
     }
 
     private static void LogUnhandledException (Object sender, UnhandledExceptionEventArgs e) {
