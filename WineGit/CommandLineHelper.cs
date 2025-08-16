@@ -13,7 +13,6 @@ internal static partial class CommandLineHelper {
     private static partial IntPtr GetCommandLineW ();
 
     public static String GetOriginalCommandLine () {
-        var commandLinePtr = GetCommandLineW();
-        return Marshal.PtrToStringUni(commandLinePtr) ?? String.Empty;
+        return Marshal.PtrToStringUni(GetCommandLineW()) ?? String.Empty;
     }
 }
