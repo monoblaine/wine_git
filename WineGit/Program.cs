@@ -41,11 +41,6 @@ internal class Program {
             AppDomain.CurrentDomain.UnhandledException += LogUnhandledException;
         }
         const String wineGitProcessName = "git.exe";
-        var args = CommandLineHelper.GetOriginalCommandLine();
-        args = args[(args.IndexOf(wineGitProcessName) + wineGitProcessName.Length)..]
-            .TrimStart(' ', '"')
-            .Replace("Z:/", "/");
-        Log?.Invoke(nameof(args), args);
         var pathToTmp = $"{PathToWineGitFolder}/tmp";
         if (AutoCreateTmpFolderIfMissing) {
             Directory.CreateDirectory(pathToTmp);
@@ -84,6 +79,11 @@ internal class Program {
         }
         Log?.Invoke(nameof(isInputRedirected), isInputRedirected.ToString());
         var pathToWorkerScript = $"{PathToWineGitFolder}/worker.sh";
+        var args = CommandLineHelper.GetOriginalCommandLine();
+        args = args[(args.IndexOf(wineGitProcessName) + wineGitProcessName.Length)..]
+            .TrimStart(' ', '"')
+            .Replace("Z:/", "/");
+        Log?.Invoke(nameof(args), args);
         var workerScriptArgs = String.Format(
             "{0}{1} {2} {3}",
             ExecuteWorkerScriptDirectly ? String.Empty : $"\"{pathToWorkerScript}\" ",
