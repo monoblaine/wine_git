@@ -8,9 +8,9 @@ internal class Program {
     private static readonly Encoding UTF8WithoutBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
     private static readonly String PathToWineGitFolder;
     private static readonly String PathToSh;
-    private static readonly String? PathToLogFile;
     private static readonly Boolean ExecuteWorkerScriptDirectly;
     private static readonly Boolean LoggingEnabled;
+    private static readonly String? PathToLogFile;
     private static readonly Boolean AutoCreateTmpFolderIfMissing;
     private static String? ExecId;
     private static ManualResetEventSlim? ResetEvent;
