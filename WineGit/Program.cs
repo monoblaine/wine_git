@@ -13,7 +13,6 @@ internal class Program {
     private static readonly Action<String, String>? Log;
     private static readonly String? PathToLogFile;
     private static readonly Boolean AutoCreateTmpFolderIfMissing;
-    private static ManualResetEventSlim? ResetEvent;
     private static readonly String ExecId;
 
     static Program () {
@@ -46,13 +45,12 @@ internal class Program {
             Directory.CreateDirectory(pathToTmp);
         }
         var isInputRedirected = Console.IsInputRedirected;
-        var pathToRedirectedInput = isInputRedirected ? $"{pathToTmp}/in_{ExecId}" : null;
         if (isInputRedirected) {
+            var pathToRedirectedInput = $"{pathToTmp}/in_{ExecId}";
             Boolean isInputReallyRedirected;
-            {
-                using var inputStream = Console.OpenStandardInput();
-                using var redirectedInput = File.OpenWrite(pathToRedirectedInput!);
-                using var cts = new CancellationTokenSource(150);
+            using (var inputStream = Console.OpenStandardInput())
+            using (var redirectedInput = File.OpenWrite(pathToRedirectedInput))
+            using (var cts = new CancellationTokenSource(150)) {
                 var ct = cts.Token;
                 var buffer = new Byte[4096];
                 var tryReadStdinTask = inputStream.ReadAsync(buffer, 0, 8, ct);
@@ -73,7 +71,7 @@ internal class Program {
                 }
             }
             if (!isInputReallyRedirected) {
-                File.Delete(pathToRedirectedInput!);
+                File.Delete(pathToRedirectedInput);
                 isInputRedirected = false;
             }
         }
@@ -92,7 +90,17 @@ internal class Program {
             args
         );
         Log?.Invoke(nameof(workerScriptArgs), workerScriptArgs);
-        using var process = new Process {
+        var lockFileName = $"lock_{ExecId}";
+        var pathToLockFile = $"{pathToTmp}/{lockFileName}";
+        var lockFile = File.OpenWrite(pathToLockFile);
+        lockFile.Dispose();
+        using (var lockFileWatcher = new FileSystemWatcher(pathToTmp, lockFileName) {
+            // NOTE: For some reason "NotifyFilters.LastWrite" does not work under Wine.
+            NotifyFilter = NotifyFilters.Attributes | NotifyFilters.LastWrite,
+            EnableRaisingEvents = true,
+        })
+        using (var resetEvent = new ManualResetEventSlim(initialState: false))
+        using (var process = new Process {
             EnableRaisingEvents = false,
             StartInfo = new ProcessStartInfo {
                 FileName = ExecuteWorkerScriptDirectly ? pathToWorkerScript : PathToSh,
@@ -105,32 +113,18 @@ internal class Program {
                 CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
             }
-        };
-        var lockFileName = $"lock_{ExecId}";
-        var pathToLockFile = $"{pathToTmp}/{lockFileName}";
-        {
-            using var lockFile = File.OpenWrite(pathToLockFile);
+        }) {
+            void lockFileWatcherChangeHandler (Object sender, FileSystemEventArgs e) => resetEvent.Set();
+            lockFileWatcher.Changed += lockFileWatcherChangeHandler;
+            process.Start();
+            resetEvent.Wait();
+            lockFileWatcher.Changed -= lockFileWatcherChangeHandler;
         }
-        using var lockFileWatcher = new FileSystemWatcher(pathToTmp, lockFileName) {
-            // NOTE: For some reason "NotifyFilters.LastWrite" does not work under Wine.
-            NotifyFilter = NotifyFilters.Attributes | NotifyFilters.LastWrite,
-            EnableRaisingEvents = true,
-        };
-        ResetEvent = new ManualResetEventSlim(initialState: false);
-        lockFileWatcher.Changed += LockFileWatcher_Changed;
-        process.Start();
-        ResetEvent.Wait();
-        lockFileWatcher.Changed -= LockFileWatcher_Changed;
-        ResetEvent.Dispose();
         var pathToOutputFile = $"{pathToTmp}/out_{ExecId}";
-        {
-            Console.OutputEncoding = UTF8WithoutBom;
-            using var outputStream = Console.OpenStandardOutput();
-            using var outputFileStream = File.OpenRead(pathToOutputFile);
+        Console.OutputEncoding = UTF8WithoutBom;
+        using (var outputFileStream = File.OpenRead(pathToOutputFile))
+        using (var outputStream = Console.OpenStandardOutput()) {
             outputFileStream.CopyTo(outputStream);
-        }
-        if (isInputRedirected) {
-            File.Delete(pathToRedirectedInput!);
         }
         File.Delete(pathToOutputFile);
         File.Delete(pathToLockFile);
@@ -138,10 +132,6 @@ internal class Program {
 
     private static void LogUnhandledException (Object sender, UnhandledExceptionEventArgs e) {
         LogImpl("err", e?.ExceptionObject.ToString() ?? "Unknown error");
-    }
-
-    private static void LockFileWatcher_Changed (Object sender, FileSystemEventArgs e) {
-        ResetEvent!.Set();
     }
 
     private static void LogImpl (String title, String body) {

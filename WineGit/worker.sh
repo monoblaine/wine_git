@@ -12,7 +12,9 @@ shift
 if [[ "$is_input_redirected" == "0" ]]; then
     git "$@" >$path_to_out_file
 else
-    git "$@" >$path_to_out_file <"$path_to_tmp/in_$execId"
+    path_to_in_file=$path_to_tmp/in_$execId
+    git "$@" >$path_to_out_file <"$path_to_in_file"
+    rm "$path_to_in_file"
 fi
 
 touch "$path_to_tmp/lock_$execId"
