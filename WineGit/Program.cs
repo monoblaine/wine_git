@@ -10,6 +10,7 @@ internal class Program {
     private static readonly String PathToSh;
     private static readonly Boolean ExecuteWorkerScriptDirectly;
     private static readonly Boolean LoggingEnabled;
+    private static readonly Action<String, String>? Log;
     private static readonly String? PathToLogFile;
     private static readonly Boolean AutoCreateTmpFolderIfMissing;
     private static ManualResetEventSlim? ResetEvent;
@@ -23,8 +24,15 @@ internal class Program {
         PathToSh = config["path_to_sh"] ?? String.Empty;
         ExecuteWorkerScriptDirectly = config["execute_worker_script_directly"] == "1";
         LoggingEnabled = config["logging_enabled"] == "1";
+        if (LoggingEnabled) {
+            Log = LogImpl;
+            PathToLogFile = $"{PathToWineGitFolder}/log.txt";
+        }
+        else {
+            Log = null;
+            PathToLogFile = null;
+        }
         AutoCreateTmpFolderIfMissing = config["auto_create_tmp_folder_if_missing"] == "1";
-        PathToLogFile = LoggingEnabled ? $"{PathToWineGitFolder}/log.txt" : null;
         ExecId = Guid.NewGuid().ToString();
     }
 
@@ -37,7 +45,7 @@ internal class Program {
         args = args[(args.IndexOf(wineGitProcessName) + wineGitProcessName.Length)..]
             .TrimStart(' ', '"')
             .Replace("Z:/", "/");
-        Log(args);
+        Log?.Invoke(nameof(args), args);
         var isInputRedirected = Console.IsInputRedirected;
         var pathToTmp = $"{PathToWineGitFolder}/tmp";
         if (AutoCreateTmpFolderIfMissing) {
@@ -66,7 +74,7 @@ internal class Program {
                 }
                 catch (OperationCanceledException) {
                     isInputReallyRedirected = false;
-                    Log("read stdin timed out.");
+                    Log?.Invoke("err", "read stdin timed out.");
                 }
             }
             if (!isInputReallyRedirected) {
@@ -74,7 +82,7 @@ internal class Program {
                 isInputRedirected = false;
             }
         }
-        Log($"isInputRedirected: {isInputRedirected}");
+        Log?.Invoke(nameof(isInputRedirected), isInputRedirected.ToString());
         var pathToWorkerScript = $"{PathToWineGitFolder}/worker.sh";
         var workerScriptArgs = String.Format(
             "{0}{1} {2} {3}",
@@ -83,7 +91,7 @@ internal class Program {
             isInputRedirected ? 1 : 0,
             args
         );
-        Log($"workerScriptArgs: {workerScriptArgs}");
+        Log?.Invoke(nameof(workerScriptArgs), workerScriptArgs);
         using var process = new Process {
             EnableRaisingEvents = false,
             StartInfo = new ProcessStartInfo {
@@ -129,17 +137,14 @@ internal class Program {
     }
 
     private static void LogUnhandledException (Object sender, UnhandledExceptionEventArgs e) {
-        Log(e?.ExceptionObject.ToString() ?? "Unknown error");
+        LogImpl("err", e?.ExceptionObject.ToString() ?? "Unknown error");
     }
 
     private static void LockFileWatcher_Changed (Object sender, FileSystemEventArgs e) {
         ResetEvent!.Set();
     }
 
-    private static void Log (String message) {
-        if (!LoggingEnabled) {
-            return;
-        }
-        File.AppendAllText(PathToLogFile!, $"[{ExecId}] {message}\n", UTF8WithoutBom);
+    private static void LogImpl (String title, String body) {
+        File.AppendAllText(PathToLogFile!, $"[{ExecId}/{title}] {body}\n", UTF8WithoutBom);
     }
 }
