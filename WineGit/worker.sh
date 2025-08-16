@@ -1,12 +1,11 @@
 #!/bin/bash
 
-path_to_wine_git_folder="/home/serhan/Shared/wine_git"
-path_to_tmp="$path_to_wine_git_folder/tmp"
-
 exec_id=$1
 shift
 is_input_redirected=$1
 shift
+path_to_tmp=$(dirname "${BASH_SOURCE[0]}")/tmp
+# path_to_tmp=~/wine_git/tmp
 path_to_out_file=$path_to_tmp/out_$exec_id
 path_to_exc_file=$path_to_tmp/exc_$exec_id
 
