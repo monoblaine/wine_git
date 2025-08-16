@@ -64,10 +64,10 @@ internal class Program {
                     tryReadStdinTask.Wait(ct);
                     var bytesRead = tryReadStdinTask.Result;
                     if (bytesRead > 0) {
-                        redirectedInput.Write(buffer, 0, bytesRead);
-                    }
-                    while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0) {
-                        redirectedInput.Write(buffer, 0, bytesRead);
+                        do {
+                            redirectedInput.Write(buffer, 0, bytesRead);
+                        }
+                        while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0);
                     }
                     isInputReallyRedirected = redirectedInput.Length > 0;
                 }
