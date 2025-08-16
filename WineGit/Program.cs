@@ -11,6 +11,7 @@ internal class Program {
     private static readonly Action<String, String>? Log;
     private static readonly String? PathToLogFile;
     private static readonly Boolean AutoCreateTmpFolderIfMissing;
+    private static readonly Boolean StdInTimeoutEnabled;
     private static readonly String ExecId;
 
     static Program () {
@@ -28,6 +29,7 @@ internal class Program {
             PathToLogFile = null;
         }
         AutoCreateTmpFolderIfMissing = config["auto_create_tmp_folder_if_missing"] == "1";
+        StdInTimeoutEnabled = config["stdin_timeout_enabled"] == "1";
         ExecId = Guid.NewGuid().ToString();
     }
 
@@ -45,12 +47,20 @@ internal class Program {
             var pathToRedirectedInput = $"{pathToTmp}/in_{ExecId}";
             Boolean isInputReallyRedirected;
             using (var inputStream = Console.OpenStandardInput())
-            using (var redirectedInput = File.OpenWrite(pathToRedirectedInput))
-            using (var cts = new CancellationTokenSource(150)) {
-                var ct = cts.Token;
-                var buffer = new Byte[4096];
-                var tryReadStdinTask = inputStream.ReadAsync(buffer, 0, 8, ct);
+            using (var redirectedInput = File.OpenWrite(pathToRedirectedInput)) {
+                CancellationTokenSource? cts;
+                CancellationToken ct;
+                if (StdInTimeoutEnabled) {
+                    cts = new CancellationTokenSource(150);
+                    ct = cts.Token;
+                }
+                else {
+                    cts = null;
+                    ct = CancellationToken.None;
+                }
                 try {
+                    var buffer = new Byte[4096];
+                    var tryReadStdinTask = inputStream.ReadAsync(buffer, 0, 8, ct);
                     tryReadStdinTask.Wait(ct);
                     var bytesRead = tryReadStdinTask.Result;
                     if (bytesRead > 0) {
@@ -64,6 +74,9 @@ internal class Program {
                 catch (OperationCanceledException) {
                     isInputReallyRedirected = false;
                     Log?.Invoke("err", "read stdin timed out.");
+                }
+                finally {
+                    cts?.Dispose();
                 }
             }
             if (!isInputReallyRedirected) {
