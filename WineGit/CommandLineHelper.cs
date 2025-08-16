@@ -14,6 +14,6 @@ internal static partial class CommandLineHelper {
 
     public static String GetOriginalCommandLine () {
         var commandLinePtr = GetCommandLineW();
-        return Marshal.PtrToStringUni(commandLinePtr) ?? "";
+        return Marshal.PtrToStringUni(commandLinePtr) ?? String.Empty;
     }
 }
