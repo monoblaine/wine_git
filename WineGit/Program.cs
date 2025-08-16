@@ -46,11 +46,11 @@ internal class Program {
             .TrimStart(' ', '"')
             .Replace("Z:/", "/");
         Log?.Invoke(nameof(args), args);
-        var isInputRedirected = Console.IsInputRedirected;
         var pathToTmp = $"{PathToWineGitFolder}/tmp";
         if (AutoCreateTmpFolderIfMissing) {
             Directory.CreateDirectory(pathToTmp);
         }
+        var isInputRedirected = Console.IsInputRedirected;
         var pathToRedirectedInput = isInputRedirected ? $"{pathToTmp}/in_{ExecId}" : null;
         if (isInputRedirected) {
             Boolean isInputReallyRedirected;
